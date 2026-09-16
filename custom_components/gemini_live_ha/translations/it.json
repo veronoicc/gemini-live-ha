@@ -1,0 +1,62 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configura Gemini Live",
+        "description": "Configura la tua chiave API di Google AI Studio e le opzioni audio in tempo reale per Gemini Live.",
+        "data": {
+          "api_key": "Chiave API",
+          "model": "Modello",
+          "voice": "Voce",
+          "system_instruction": "Istruzioni di sistema",
+          "temperature": "Temperatura",
+          "thinking_level": "Livello di riflessione",
+          "google_search": "Abilita ricerca Google",
+          "expose_ha_control": "Abilita controllo domotico"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "La chiave API non può essere vuota.",
+      "cannot_connect": "Impossibile connettersi all'API Gemini Live.",
+      "unknown": "Si è verificato un errore imprevisto."
+    },
+    "abort": {
+      "already_configured": "Questa chiave API è già configurata."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opzioni Gemini Live",
+        "description": "Regola le impostazioni di modello, voce e comportamento.",
+        "data": {
+          "model": "Modello",
+          "voice": "Voce",
+          "system_instruction": "Istruzioni di sistema",
+          "temperature": "Temperatura",
+          "thinking_level": "Livello di riflessione",
+          "google_search": "Abilita ricerca Google",
+          "expose_ha_control": "Abilita controllo domotico"
+        }
+      }
+    }
+  },
+  "entity": {
+    "stt": {
+      "stt": {
+        "name": "Sintesi vocale (STT)"
+      }
+    },
+    "conversation": {
+      "conversation": {
+        "name": "Conversazione"
+      }
+    },
+    "tts": {
+      "tts": {
+        "name": "Sintesi vocale (TTS)"
+      }
+    }
+  }
+}

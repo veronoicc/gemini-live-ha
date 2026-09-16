@@ -1,0 +1,19 @@
+{
+  "domain": "gemini_live_ha",
+  "name": "Gemini Live HA",
+  "after_dependencies": [
+    "assist_pipeline"
+  ],
+  "codeowners": [
+    "@veronoicc"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/veronoicc/gemini-live-ha",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/veronoicc/gemini-live-ha/issues",
+  "requirements": [
+    "websockets>=13.0"
+  ],
+  "version": "1.0.0"
+}

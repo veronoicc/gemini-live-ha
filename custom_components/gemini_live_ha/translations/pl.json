@@ -1,0 +1,62 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Skonfiguruj Gemini Live",
+        "description": "Skonfiguruj klucz API Google AI Studio oraz opcje dźwięku w czasie rzeczywistym dla Gemini Live.",
+        "data": {
+          "api_key": "Klucz API",
+          "model": "Model",
+          "voice": "Głos",
+          "system_instruction": "Instrukcje systemowe",
+          "temperature": "Temperatura",
+          "thinking_level": "Poziom myślenia",
+          "google_search": "Włącz uziemienie w wyszukiwarce Google",
+          "expose_ha_control": "Włącz sterowanie inteligentnym domem"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "Klucz API nie może być pusty.",
+      "cannot_connect": "Nie udało się połączyć z API Gemini Live.",
+      "unknown": "Wystąpił nieoczekiwany błąd."
+    },
+    "abort": {
+      "already_configured": "Ten klucz API jest już skonfigurowany."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opcje Gemini Live",
+        "description": "Dostosuj ustawienia modelu, głosu i zachowania.",
+        "data": {
+          "model": "Model",
+          "voice": "Głos",
+          "system_instruction": "Instrukcje systemowe",
+          "temperature": "Temperatura",
+          "thinking_level": "Poziom myślenia",
+          "google_search": "Włącz uziemienie w wyszukiwarce Google",
+          "expose_ha_control": "Włącz sterowanie inteligentnym domem"
+        }
+      }
+    }
+  },
+  "entity": {
+    "stt": {
+      "stt": {
+        "name": "Mowa na tekst"
+      }
+    },
+    "conversation": {
+      "conversation": {
+        "name": "Konwersacja"
+      }
+    },
+    "tts": {
+      "tts": {
+        "name": "Tekst na mowę"
+      }
+    }
+  }
+}

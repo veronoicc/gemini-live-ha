@@ -1,0 +1,62 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Gemini Live instellen",
+        "description": "Configureer uw Google AI Studio API-sleutel en opties voor Gemini Live real-time audio.",
+        "data": {
+          "api_key": "API-sleutel",
+          "model": "Model",
+          "voice": "Stem",
+          "system_instruction": "Systeeminstructies",
+          "temperature": "Temperatuur",
+          "thinking_level": "Denkniveau",
+          "google_search": "Google Zoeken-grounding inschakelen",
+          "expose_ha_control": "Smart Home-bediening inschakelen"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "API-sleutel mag niet leeg zijn.",
+      "cannot_connect": "Verbinding met Gemini Live API mislukt.",
+      "unknown": "Onverwachte fout opgetreden."
+    },
+    "abort": {
+      "already_configured": "Deze API-sleutel is al geconfigureerd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gemini Live Opties",
+        "description": "Pas model-, stem- en gedragsinstellingen aan.",
+        "data": {
+          "model": "Model",
+          "voice": "Stem",
+          "system_instruction": "Systeeminstructies",
+          "temperature": "Temperatuur",
+          "thinking_level": "Denkniveau",
+          "google_search": "Google Zoeken-grounding inschakelen",
+          "expose_ha_control": "Smart Home-bediening inschakelen"
+        }
+      }
+    }
+  },
+  "entity": {
+    "stt": {
+      "stt": {
+        "name": "Spraak-naar-tekst"
+      }
+    },
+    "conversation": {
+      "conversation": {
+        "name": "Gesprek"
+      }
+    },
+    "tts": {
+      "tts": {
+        "name": "Tekst-naar-spraak"
+      }
+    }
+  }
+}

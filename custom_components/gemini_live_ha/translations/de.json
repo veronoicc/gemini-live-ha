@@ -1,0 +1,62 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Gemini Live einrichten",
+        "description": "Konfigurieren Sie Ihren Google AI Studio API-Schlüssel und Optionen für Gemini Live Echtzeit-Audio.",
+        "data": {
+          "api_key": "API-Schlüssel",
+          "model": "Modell",
+          "voice": "Stimme",
+          "system_instruction": "Systemanweisungen",
+          "temperature": "Temperatur",
+          "thinking_level": "Denkstufe",
+          "google_search": "Google-Suche-Grounding aktivieren",
+          "expose_ha_control": "Smart-Home-Steuerung aktivieren"
+        }
+      }
+    },
+    "error": {
+      "invalid_api_key": "API-Schlüssel darf nicht leer sein.",
+      "cannot_connect": "Verbindung zur Gemini Live API fehlgeschlagen.",
+      "unknown": "Unerwarteter Fehler aufgetreten."
+    },
+    "abort": {
+      "already_configured": "Dieser API-Schlüssel ist bereits konfiguriert."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gemini Live Optionen",
+        "description": "Modell-, Sprach- und Verhaltenseinstellungen anpassen.",
+        "data": {
+          "model": "Modell",
+          "voice": "Stimme",
+          "system_instruction": "Systemanweisungen",
+          "temperature": "Temperatur",
+          "thinking_level": "Denkstufe",
+          "google_search": "Google-Suche-Grounding aktivieren",
+          "expose_ha_control": "Smart-Home-Steuerung aktivieren"
+        }
+      }
+    }
+  },
+  "entity": {
+    "stt": {
+      "stt": {
+        "name": "Sprache zu Text"
+      }
+    },
+    "conversation": {
+      "conversation": {
+        "name": "Konversation"
+      }
+    },
+    "tts": {
+      "tts": {
+        "name": "Text zu Sprache"
+      }
+    }
+  }
+}
