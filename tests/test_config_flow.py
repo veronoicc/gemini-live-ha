@@ -3,20 +3,20 @@
 import pytest
 from custom_components.gemini_live_ha.config_flow import (
     GeminiLiveConfigFlow,
-    GeminiLiveOptionsFlowHandler,
 )
 from custom_components.gemini_live_ha.const import (
     CONF_API_KEY,
-    CONF_EXPOSE_HA_CONTROL,
-    CONF_GOOGLE_SEARCH,
     CONF_MODEL,
     CONF_TEMPERATURE,
     CONF_THINKING_LEVEL,
+    CONF_TOOL_MODE,
     CONF_VOICE,
     DEFAULT_MODEL,
     DEFAULT_VOICE,
     MODEL_3_8_LIVE_EXTENDED_THINKING,
     THINKING_LEVEL_MEDIUM,
+    TOOL_MODE_GOOGLE_SEARCH,
+    TOOL_MODE_HA_CONTROL,
     VOICE_CHARON,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -62,8 +62,7 @@ async def test_step_user_custom_model_and_voice() -> None:
             CONF_VOICE: VOICE_CHARON,
             CONF_THINKING_LEVEL: THINKING_LEVEL_MEDIUM,
             CONF_TEMPERATURE: 0.7,
-            CONF_GOOGLE_SEARCH: True,
-            CONF_EXPOSE_HA_CONTROL: True,
+            CONF_TOOL_MODE: TOOL_MODE_GOOGLE_SEARCH,
         }
     )
 
@@ -73,7 +72,7 @@ async def test_step_user_custom_model_and_voice() -> None:
     assert result["data"][CONF_VOICE] == VOICE_CHARON
     assert result["data"][CONF_THINKING_LEVEL] == THINKING_LEVEL_MEDIUM
     assert result["data"][CONF_TEMPERATURE] == 0.7
-    assert result["data"][CONF_GOOGLE_SEARCH] is True
+    assert result["data"][CONF_TOOL_MODE] == TOOL_MODE_GOOGLE_SEARCH
 
 
 @pytest.mark.asyncio
@@ -85,8 +84,8 @@ async def test_options_flow() -> None:
         data={CONF_API_KEY: "test_key", CONF_MODEL: DEFAULT_MODEL},
         options={},
     )
-    handler = GeminiLiveOptionsFlowHandler(entry)
-
+    handler = GeminiLiveConfigFlow.async_get_options_flow(entry)
+    handler._config_entry = entry
     # Initial view returns form
     form = await handler.async_step_init()
     assert form["type"] == "form"
@@ -96,6 +95,7 @@ async def test_options_flow() -> None:
         {
             CONF_MODEL: MODEL_3_8_LIVE_EXTENDED_THINKING,
             CONF_VOICE: VOICE_CHARON,
+            CONF_TOOL_MODE: TOOL_MODE_HA_CONTROL,
             CONF_TEMPERATURE: 1.2,
         }
     )
@@ -103,3 +103,4 @@ async def test_options_flow() -> None:
     assert result["data"][CONF_MODEL] == MODEL_3_8_LIVE_EXTENDED_THINKING
     assert result["data"][CONF_VOICE] == VOICE_CHARON
     assert result["data"][CONF_TEMPERATURE] == 1.2
+    assert result["data"][CONF_TOOL_MODE] == TOOL_MODE_HA_CONTROL

@@ -10,6 +10,7 @@ from homeassistant.components.conversation import (
     ConversationInput,
     ConversationResult,
 )
+from homeassistant.const import MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import intent
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
@@ -53,9 +54,9 @@ class GeminiLiveConversationEntity(ConversationEntity):
         )
 
     @property
-    def supported_languages(self) -> list[str]:
+    def supported_languages(self) -> list[str] | str:
         """Return supported languages."""
-        return ["*"]
+        return MATCH_ALL
 
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
         """Process incoming conversation input."""

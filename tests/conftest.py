@@ -18,6 +18,12 @@ if "homeassistant" not in sys.modules:
         TTS = "tts"
 
     ha.const.Platform = MockPlatform
+    ha.const.MATCH_ALL = "*"
+
+    def mock_callback(func: Any) -> Any:
+        return func
+
+    ha.core.callback = mock_callback
 
     class MockConfigEntry:
         def __init__(
@@ -73,8 +79,13 @@ if "homeassistant" not in sys.modules:
     ha.config_entries.ConfigFlow = MockConfigFlow
 
     class MockOptionsFlow:
-        def __init__(self, config_entry: MockConfigEntry) -> None:
-            self.config_entry = config_entry
+        _config_entry: MockConfigEntry | None = None
+
+        @property
+        def config_entry(self) -> MockConfigEntry:
+            if self._config_entry is None:
+                raise AttributeError("config_entry not set")
+            return self._config_entry
 
         def async_create_entry(self, title: str, data: dict) -> dict:
             return {"type": "create_entry", "title": title, "data": data}

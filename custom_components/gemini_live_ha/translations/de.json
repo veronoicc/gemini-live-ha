@@ -11,8 +11,7 @@
           "system_instruction": "Systemanweisungen",
           "temperature": "Temperatur",
           "thinking_level": "Denkstufe",
-          "google_search": "Google-Suche-Grounding aktivieren",
-          "expose_ha_control": "Smart-Home-Steuerung aktivieren"
+          "tool_mode": "Werkzeuge / Funktionen"
         }
       }
     },
@@ -36,9 +35,17 @@
           "system_instruction": "Systemanweisungen",
           "temperature": "Temperatur",
           "thinking_level": "Denkstufe",
-          "google_search": "Google-Suche-Grounding aktivieren",
-          "expose_ha_control": "Smart-Home-Steuerung aktivieren"
+          "tool_mode": "Werkzeuge / Funktionen"
         }
+      }
+    }
+  },
+  "selector": {
+    "tool_mode": {
+      "options": {
+        "ha_control": "Smart-Home-Steuerung (Standard)",
+        "google_search": "Google-Suche-Grounding",
+        "none": "Keine (Nur Konversation)"
       }
     }
   },

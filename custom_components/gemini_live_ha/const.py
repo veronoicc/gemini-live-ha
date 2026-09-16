@@ -13,6 +13,18 @@ CONF_TEMPERATURE: Final = "temperature"
 CONF_THINKING_LEVEL: Final = "thinking_level"
 CONF_GOOGLE_SEARCH: Final = "google_search"
 CONF_EXPOSE_HA_CONTROL: Final = "expose_ha_control"
+CONF_TOOL_MODE: Final = "tool_mode"
+
+# Tool modes (mutually exclusive in Gemini Live API)
+TOOL_MODE_HA_CONTROL: Final = "ha_control"
+TOOL_MODE_GOOGLE_SEARCH: Final = "google_search"
+TOOL_MODE_NONE: Final = "none"
+
+TOOL_MODES: Final[list[str]] = [
+    TOOL_MODE_HA_CONTROL,
+    TOOL_MODE_GOOGLE_SEARCH,
+    TOOL_MODE_NONE,
+]
 
 # Supported models requested by user
 MODEL_2_5_FLASH_NATIVE_AUDIO: Final = "gemini-2.5-flash-native-audio-preview-12-2025"
@@ -62,6 +74,7 @@ DEFAULT_TEMPERATURE: Final = 1.0
 DEFAULT_THINKING_LEVEL: Final = THINKING_LEVEL_OFF
 DEFAULT_GOOGLE_SEARCH: Final = False
 DEFAULT_EXPOSE_HA_CONTROL: Final = True
+DEFAULT_TOOL_MODE: Final = TOOL_MODE_HA_CONTROL
 
 DEFAULT_SYSTEM_INSTRUCTION: Final = (
     "You are a helpful smart home voice assistant running in Home Assistant. "

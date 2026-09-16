@@ -11,8 +11,7 @@
           "system_instruction": "Instrucciones del sistema",
           "temperature": "Temperatura",
           "thinking_level": "Nivel de pensamiento",
-          "google_search": "Habilitar búsqueda de Google",
-          "expose_ha_control": "Habilitar control de hogar inteligente"
+          "tool_mode": "Herramientas y funciones"
         }
       }
     },
@@ -36,9 +35,17 @@
           "system_instruction": "Instrucciones del sistema",
           "temperature": "Temperatura",
           "thinking_level": "Nivel de pensamiento",
-          "google_search": "Habilitar búsqueda de Google",
-          "expose_ha_control": "Habilitar control de hogar inteligente"
+          "tool_mode": "Herramientas y funciones"
         }
+      }
+    }
+  },
+  "selector": {
+    "tool_mode": {
+      "options": {
+        "ha_control": "Control de hogar inteligente (Predeterminado)",
+        "google_search": "Búsqueda en Google",
+        "none": "Ninguna (Solo conversación)"
       }
     }
   },

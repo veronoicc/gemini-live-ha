@@ -11,8 +11,7 @@
           "system_instruction": "Systeeminstructies",
           "temperature": "Temperatuur",
           "thinking_level": "Denkniveau",
-          "google_search": "Google Zoeken-grounding inschakelen",
-          "expose_ha_control": "Smart Home-bediening inschakelen"
+          "tool_mode": "Hulpmiddelen en functies"
         }
       }
     },
@@ -36,9 +35,17 @@
           "system_instruction": "Systeeminstructies",
           "temperature": "Temperatuur",
           "thinking_level": "Denkniveau",
-          "google_search": "Google Zoeken-grounding inschakelen",
-          "expose_ha_control": "Smart Home-bediening inschakelen"
+          "tool_mode": "Hulpmiddelen en functies"
         }
+      }
+    }
+  },
+  "selector": {
+    "tool_mode": {
+      "options": {
+        "ha_control": "Smart Home-bediening (Standaard)",
+        "google_search": "Google Zoeken",
+        "none": "Geen (Alleen gesprek)"
       }
     }
   },

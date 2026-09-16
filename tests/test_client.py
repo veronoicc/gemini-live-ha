@@ -93,6 +93,23 @@ def test_build_setup_message_thinking_and_search() -> None:
     assert any("googleSearch" in t for t in s["tools"])
 
 
+def test_tools_mutual_exclusivity() -> None:
+    """Test that Google Search and HA control cannot both be sent."""
+    hass = MagicMock()
+    config = {
+        CONF_API_KEY: "test_key",
+        CONF_MODEL: DEFAULT_MODEL,
+        CONF_GOOGLE_SEARCH: True,
+        CONF_EXPOSE_HA_CONTROL: True,
+    }
+    client = GeminiLiveClient(hass, config)
+    setup = client._build_setup_message()
+    tools = setup["setup"].get("tools", [])
+    has_search = any("googleSearch" in t for t in tools)
+    has_funcs = any("functionDeclarations" in t for t in tools)
+    assert not (has_search and has_funcs)
+
+
 @pytest.mark.asyncio
 async def test_execute_ha_command() -> None:
     """Test executing Home Assistant command."""

@@ -69,6 +69,7 @@ async def test_stt_entity(mock_entry: ConfigEntry) -> None:
 async def test_conversation_entity_pipeline_cache_hit(mock_entry: ConfigEntry) -> None:
     """Test Conversation entity using pre-generated turn from STT."""
     conv_entity = GeminiLiveConversationEntity(mock_entry)
+    assert conv_entity.supported_languages == "*"
 
     # Pre-populate turn_cache as if STT just ran
     mock_entry.runtime_data.turn_cache.store_turn(

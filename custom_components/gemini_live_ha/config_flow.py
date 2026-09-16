@@ -15,7 +15,6 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
-    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -36,17 +35,21 @@ from .const import (
     CONF_SYSTEM_INSTRUCTION,
     CONF_TEMPERATURE,
     CONF_THINKING_LEVEL,
+    CONF_TOOL_MODE,
     CONF_VOICE,
     DEFAULT_EXPOSE_HA_CONTROL,
-    DEFAULT_GOOGLE_SEARCH,
     DEFAULT_MODEL,
     DEFAULT_SYSTEM_INSTRUCTION,
     DEFAULT_TEMPERATURE,
     DEFAULT_THINKING_LEVEL,
+    DEFAULT_TOOL_MODE,
     DEFAULT_VOICE,
     DOMAIN,
     MODELS,
     THINKING_LEVELS,
+    TOOL_MODE_GOOGLE_SEARCH,
+    TOOL_MODE_HA_CONTROL,
+    TOOL_MODE_NONE,
     VOICES,
 )
 
@@ -63,6 +66,18 @@ def _voice_options() -> list[SelectOptionDict]:
 
 def _thinking_level_options() -> list[SelectOptionDict]:
     return [SelectOptionDict(value=t, label=t) for t in THINKING_LEVELS]
+
+
+def _tool_mode_options() -> list[SelectOptionDict]:
+    return [
+        SelectOptionDict(
+            value=TOOL_MODE_HA_CONTROL, label="Smart Home Control (Default)"
+        ),
+        SelectOptionDict(
+            value=TOOL_MODE_GOOGLE_SEARCH, label="Google Search Grounding"
+        ),
+        SelectOptionDict(value=TOOL_MODE_NONE, label="None (Conversational only)"),
+    ]
 
 
 class GeminiLiveConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -104,11 +119,8 @@ class GeminiLiveConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_THINKING_LEVEL: user_input.get(
                             CONF_THINKING_LEVEL, DEFAULT_THINKING_LEVEL
                         ),
-                        CONF_GOOGLE_SEARCH: user_input.get(
-                            CONF_GOOGLE_SEARCH, DEFAULT_GOOGLE_SEARCH
-                        ),
-                        CONF_EXPOSE_HA_CONTROL: user_input.get(
-                            CONF_EXPOSE_HA_CONTROL, DEFAULT_EXPOSE_HA_CONTROL
+                        CONF_TOOL_MODE: user_input.get(
+                            CONF_TOOL_MODE, DEFAULT_TOOL_MODE
                         ),
                     },
                 )
@@ -151,12 +163,13 @@ class GeminiLiveConfigFlow(ConfigFlow, domain=DOMAIN):
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional(
-                    CONF_GOOGLE_SEARCH, default=DEFAULT_GOOGLE_SEARCH
-                ): BooleanSelector(),
-                vol.Optional(
-                    CONF_EXPOSE_HA_CONTROL, default=DEFAULT_EXPOSE_HA_CONTROL
-                ): BooleanSelector(),
+                vol.Required(CONF_TOOL_MODE, default=DEFAULT_TOOL_MODE): SelectSelector(
+                    SelectSelectorConfig(
+                        options=_tool_mode_options(),
+                        mode=SelectSelectorMode.DROPDOWN,
+                        translation_key="tool_mode",
+                    )
+                ),
             }
         )
 
@@ -166,15 +179,11 @@ class GeminiLiveConfigFlow(ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         """Get the options flow for this handler."""
-        return GeminiLiveOptionsFlowHandler(config_entry)
+        return GeminiLiveOptionsFlowHandler()
 
 
 class GeminiLiveOptionsFlowHandler(OptionsFlow):
     """Handle options flow for Gemini Live HA."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -184,7 +193,14 @@ class GeminiLiveOptionsFlowHandler(OptionsFlow):
             return self.async_create_entry(title="", data=user_input)
 
         entry_data = {**self.config_entry.data, **self.config_entry.options}
-
+        current_tool_mode = entry_data.get(CONF_TOOL_MODE)
+        if not current_tool_mode:
+            if entry_data.get(CONF_GOOGLE_SEARCH):
+                current_tool_mode = TOOL_MODE_GOOGLE_SEARCH
+            elif entry_data.get(CONF_EXPOSE_HA_CONTROL, DEFAULT_EXPOSE_HA_CONTROL):
+                current_tool_mode = TOOL_MODE_HA_CONTROL
+            else:
+                current_tool_mode = TOOL_MODE_NONE
         schema = vol.Schema(
             {
                 vol.Required(
@@ -229,16 +245,13 @@ class GeminiLiveOptionsFlowHandler(OptionsFlow):
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional(
-                    CONF_GOOGLE_SEARCH,
-                    default=entry_data.get(CONF_GOOGLE_SEARCH, DEFAULT_GOOGLE_SEARCH),
-                ): BooleanSelector(),
-                vol.Optional(
-                    CONF_EXPOSE_HA_CONTROL,
-                    default=entry_data.get(
-                        CONF_EXPOSE_HA_CONTROL, DEFAULT_EXPOSE_HA_CONTROL
-                    ),
-                ): BooleanSelector(),
+                vol.Required(CONF_TOOL_MODE, default=current_tool_mode): SelectSelector(
+                    SelectSelectorConfig(
+                        options=_tool_mode_options(),
+                        mode=SelectSelectorMode.DROPDOWN,
+                        translation_key="tool_mode",
+                    )
+                ),
             }
         )
 

@@ -11,8 +11,7 @@
           "system_instruction": "Istruzioni di sistema",
           "temperature": "Temperatura",
           "thinking_level": "Livello di riflessione",
-          "google_search": "Abilita ricerca Google",
-          "expose_ha_control": "Abilita controllo domotico"
+          "tool_mode": "Strumenti e funzionalità"
         }
       }
     },
@@ -36,9 +35,17 @@
           "system_instruction": "Istruzioni di sistema",
           "temperature": "Temperatura",
           "thinking_level": "Livello di riflessione",
-          "google_search": "Abilita ricerca Google",
-          "expose_ha_control": "Abilita controllo domotico"
+          "tool_mode": "Strumenti e funzionalità"
         }
+      }
+    }
+  },
+  "selector": {
+    "tool_mode": {
+      "options": {
+        "ha_control": "Controllo domotico (Predefinito)",
+        "google_search": "Ricerca Google",
+        "none": "Nessuno (Solo conversazione)"
       }
     }
   },

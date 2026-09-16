@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import itertools
 import math
-from pathlib import Path
 import struct
 import zlib
-
+from pathlib import Path
 
 SIZE = 256
 SCALE = 4
@@ -58,9 +58,13 @@ def draw_disc(
     color: tuple[int, int, int, int],
 ) -> None:
     """Draw a filled disc."""
-    for y in range(max(0, int(center_y - radius)), min(CANVAS, int(center_y + radius) + 1)):
+    for y in range(
+        max(0, int(center_y - radius)), min(CANVAS, int(center_y + radius) + 1)
+    ):
         span = math.sqrt(max(0, radius * radius - (y - center_y) ** 2))
-        for x in range(max(0, int(center_x - span)), min(CANVAS, int(center_x + span) + 1)):
+        for x in range(
+            max(0, int(center_x - span)), min(CANVAS, int(center_x + span) + 1)
+        ):
             set_pixel(image, x, y, color)
 
 
@@ -164,7 +168,7 @@ def main() -> None:
         (250, 0, 44),
     ]
     points = [(center + x, center + y) for x, y, _width in waveform]
-    for index, (start, end) in enumerate(zip(points, points[1:])):
+    for index, (start, end) in enumerate(itertools.pairwise(points)):
         draw_line(image, start, end, waveform[index][2], (255, 255, 255, 255))
 
     write_png(image)

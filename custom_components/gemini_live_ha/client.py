@@ -24,9 +24,9 @@ from .const import (
     CONF_SYSTEM_INSTRUCTION,
     CONF_TEMPERATURE,
     CONF_THINKING_LEVEL,
+    CONF_TOOL_MODE,
     CONF_VOICE,
     DEFAULT_EXPOSE_HA_CONTROL,
-    DEFAULT_GOOGLE_SEARCH,
     DEFAULT_MODEL,
     DEFAULT_SYSTEM_INSTRUCTION,
     DEFAULT_TEMPERATURE,
@@ -37,6 +37,9 @@ from .const import (
     OUTPUT_SAMPLE_RATE,
     SAMPLE_WIDTH,
     THINKING_LEVEL_OFF,
+    TOOL_MODE_GOOGLE_SEARCH,
+    TOOL_MODE_HA_CONTROL,
+    TOOL_MODE_NONE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -97,14 +100,15 @@ class GeminiLiveClient:
         return self.config.get(CONF_THINKING_LEVEL, DEFAULT_THINKING_LEVEL)
 
     @property
-    def google_search(self) -> bool:
-        """Return whether Google Search is enabled."""
-        return self.config.get(CONF_GOOGLE_SEARCH, DEFAULT_GOOGLE_SEARCH)
-
-    @property
-    def expose_ha_control(self) -> bool:
-        """Return whether Home Assistant control tool is enabled."""
-        return self.config.get(CONF_EXPOSE_HA_CONTROL, DEFAULT_EXPOSE_HA_CONTROL)
+    def tool_mode(self) -> str:
+        """Return configured tool mode."""
+        if mode := self.config.get(CONF_TOOL_MODE):
+            return mode
+        if self.config.get(CONF_GOOGLE_SEARCH):
+            return TOOL_MODE_GOOGLE_SEARCH
+        if self.config.get(CONF_EXPOSE_HA_CONTROL, DEFAULT_EXPOSE_HA_CONTROL):
+            return TOOL_MODE_HA_CONTROL
+        return TOOL_MODE_NONE
 
     def _build_setup_message(self) -> dict[str, Any]:
         """Build initial session setup message."""
@@ -127,10 +131,10 @@ class GeminiLiveClient:
             }
 
         tools: list[dict[str, Any]] = []
-        if self.google_search:
+        # Google Search and custom function calling are mutually exclusive in Gemini Live API
+        if self.tool_mode == TOOL_MODE_GOOGLE_SEARCH:
             tools.append({"googleSearch": {}})
-
-        if self.expose_ha_control:
+        elif self.tool_mode == TOOL_MODE_HA_CONTROL:
             tools.append(
                 {
                     "functionDeclarations": [

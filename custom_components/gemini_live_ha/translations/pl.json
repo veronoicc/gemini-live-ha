@@ -11,8 +11,7 @@
           "system_instruction": "Instrukcje systemowe",
           "temperature": "Temperatura",
           "thinking_level": "Poziom myślenia",
-          "google_search": "Włącz uziemienie w wyszukiwarce Google",
-          "expose_ha_control": "Włącz sterowanie inteligentnym domem"
+          "tool_mode": "Narzędzia i funkcje"
         }
       }
     },
@@ -36,9 +35,17 @@
           "system_instruction": "Instrukcje systemowe",
           "temperature": "Temperatura",
           "thinking_level": "Poziom myślenia",
-          "google_search": "Włącz uziemienie w wyszukiwarce Google",
-          "expose_ha_control": "Włącz sterowanie inteligentnym domem"
+          "tool_mode": "Narzędzia i funkcje"
         }
+      }
+    }
+  },
+  "selector": {
+    "tool_mode": {
+      "options": {
+        "ha_control": "Sterowanie inteligentnym domem (Domyślne)",
+        "google_search": "Wyszukiwarka Google",
+        "none": "Brak (Tylko konwersacja)"
       }
     }
   },
