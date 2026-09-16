@@ -165,10 +165,14 @@ class GeminiLiveClient:
             "systemInstruction": {
                 "parts": [{"text": self.system_instruction}],
             },
+            "realtimeInputConfig": {
+                "automaticActivityDetection": {
+                    "disabled": True,
+                }
+            },
             "inputAudioTranscription": {},
             "outputAudioTranscription": {},
         }
-
         if tools:
             setup["tools"] = tools
 
@@ -376,6 +380,11 @@ class GeminiLiveClient:
                                     "Turn complete for tool call request. Awaiting model confirmation..."
                                 )
                                 awaiting_tool_response = False
+                                continue
+                            if not send_task.done():
+                                _LOGGER.debug(
+                                    "Received turnComplete while audio streaming is still active; waiting for stream to finish"
+                                )
                                 continue
                             _LOGGER.debug("Received final turnComplete from server")
                             status = server_content.get("interactionStatus")

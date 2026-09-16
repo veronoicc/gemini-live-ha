@@ -207,7 +207,7 @@ async def test_process_audio_turn() -> None:
         assert "setup" in setup_parsed
         # Verify audio chunks sent in mediaChunks
         assert any(
-            "realtimeInput" in m and "mediaChunks" in json.loads(m)["realtimeInput"]
+            "mediaChunks" in json.loads(m).get("realtimeInput", {})
             for m in sent_messages
         )
 
