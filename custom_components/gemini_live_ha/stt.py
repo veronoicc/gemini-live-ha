@@ -124,7 +124,7 @@ class GeminiLiveSTTEntity(SpeechToTextEntity):
         """Return required audio processing settings."""
         return SpeechAudioProcessing(
             requires_external_vad=True,
-            prefers_auto_gain_enabled=False,
+            prefers_auto_gain_enabled=True,
             prefers_noise_reduction_enabled=False,
         )
 

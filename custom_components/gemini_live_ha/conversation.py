@@ -77,12 +77,12 @@ class GeminiLiveConversationEntity(ConversationEntity):
 
             response = intent.IntentResponse(language=user_input.language)
             response.async_set_speech(model_text)
+            should_continue = model_text.strip().endswith("?")
             return ConversationResult(
                 response=response,
                 conversation_id=user_input.conversation_id,
+                continue_conversation=should_continue,
             )
-
-        # Step 2: Fallback for text-based Assist query (user typed text instead of voice)
         _LOGGER.debug(
             "No cached STT turn found. Processing text query: '%s'", user_input.text
         )
@@ -99,9 +99,11 @@ class GeminiLiveConversationEntity(ConversationEntity):
 
             response = intent.IntentResponse(language=user_input.language)
             response.async_set_speech(model_text)
+            should_continue = model_text.strip().endswith("?")
             return ConversationResult(
                 response=response,
                 conversation_id=user_input.conversation_id,
+                continue_conversation=should_continue,
             )
         except Exception as err:
             _LOGGER.exception("Error processing text query in Gemini Live conversation")

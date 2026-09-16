@@ -143,9 +143,15 @@ if "homeassistant" not in sys.modules:
     ha.components.conversation.ConversationEntityFeature = MockConversationEntityFeature
 
     class MockConversationResult:
-        def __init__(self, response: Any, conversation_id: str | None = None) -> None:
+        def __init__(
+            self,
+            response: Any,
+            conversation_id: str | None = None,
+            continue_conversation: bool = False,
+        ) -> None:
             self.response = response
             self.conversation_id = conversation_id
+            self.continue_conversation = continue_conversation
 
     ha.components.conversation.ConversationResult = MockConversationResult
 
