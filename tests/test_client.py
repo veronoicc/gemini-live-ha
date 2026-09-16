@@ -205,16 +205,15 @@ async def test_process_audio_turn() -> None:
         assert len(sent_messages) >= 3
         setup_parsed = json.loads(sent_messages[0])
         assert "setup" in setup_parsed
-
-        # Verify audio chunks sent
+        # Verify audio chunks sent in mediaChunks
         assert any(
-            "realtimeInput" in m and "audio" in json.loads(m)["realtimeInput"]
+            "realtimeInput" in m and "mediaChunks" in json.loads(m)["realtimeInput"]
             for m in sent_messages
         )
 
-        # Verify audioStreamEnd sent
+        # Verify clientContent turnComplete sent
         assert any(
-            json.loads(m).get("realtimeInput", {}).get("audioStreamEnd") is True
+            json.loads(m).get("clientContent", {}).get("turnComplete") is True
             for m in sent_messages
         )
 

@@ -297,29 +297,30 @@ class GeminiLiveClient:
                         encoded = base64.b64encode(chunk).decode("utf-8")
                         msg = {
                             "realtimeInput": {
-                                "audio": {
-                                    "mimeType": "audio/pcm;rate=16000",
-                                    "data": encoded,
-                                }
+                                "mediaChunks": [
+                                    {
+                                        "mimeType": "audio/pcm;rate=16000",
+                                        "data": encoded,
+                                    }
+                                ]
                             }
                         }
                         await ws.send(json.dumps(msg))
 
                     _LOGGER.debug(
-                        "Streamed %d audio chunks (%d bytes), sending audioStreamEnd",
+                        "Streamed %d audio chunks (%d bytes). Sending clientContent turnComplete",
                         chunks_sent,
                         total_bytes,
                     )
-                    # Indicate end of audio stream to Gemini Live
-                    await ws.send(
-                        json.dumps({"realtimeInput": {"audioStreamEnd": True}})
-                    )
+                    # Indicate end of client turn to Gemini Live
+                    await ws.send(json.dumps({"clientContent": {"turnComplete": True}}))
                 except Exception as err:  # noqa: BLE001
                     _LOGGER.warning("Exception in send_audio: %s", err)
 
             send_task = asyncio.create_task(send_audio())
 
             # 4. Receive model responses
+            awaiting_tool_response = False
             try:
                 async for message in ws:
                     try:
@@ -333,8 +334,8 @@ class GeminiLiveClient:
 
                     # Tool calls
                     if "toolCall" in data:
+                        awaiting_tool_response = True
                         await self._handle_tool_call(ws, data["toolCall"], context)
-
                     # Server content
                     if "serverContent" in data:
                         server_content = data["serverContent"]
@@ -370,11 +371,16 @@ class GeminiLiveClient:
 
                         # Check turn completion
                         if server_content.get("turnComplete"):
-                            _LOGGER.debug("Received turnComplete from server")
+                            if awaiting_tool_response:
+                                _LOGGER.debug(
+                                    "Turn complete for tool call request. Awaiting model confirmation..."
+                                )
+                                awaiting_tool_response = False
+                                continue
+                            _LOGGER.debug("Received final turnComplete from server")
                             status = server_content.get("interactionStatus")
                             if status != "IN_PROGRESS":
                                 break
-
                     # GoAway warning
                     if "goAway" in data:
                         _LOGGER.warning(
@@ -465,6 +471,7 @@ class GeminiLiveClient:
             await ws.send(json.dumps(client_msg))
 
             # 4. Receive model response
+            awaiting_tool_response = False
             async for message in ws:
                 try:
                     data = json.loads(message)
@@ -476,8 +483,8 @@ class GeminiLiveClient:
                     break
 
                 if "toolCall" in data:
+                    awaiting_tool_response = True
                     await self._handle_tool_call(ws, data["toolCall"], context)
-
                 if "serverContent" in data:
                     server_content = data["serverContent"]
 
@@ -497,10 +504,12 @@ class GeminiLiveClient:
                                 audio_chunks.append(raw_pcm)
 
                     if server_content.get("turnComplete"):
+                        if awaiting_tool_response:
+                            awaiting_tool_response = False
+                            continue
                         status = server_content.get("interactionStatus")
                         if status != "IN_PROGRESS":
                             break
-
             if ws.close_code is not None and ws.close_code != 1000:
                 _LOGGER.warning(
                     "Gemini Live WebSocket closed with code %s: %s",

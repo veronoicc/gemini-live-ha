@@ -215,9 +215,10 @@ if "homeassistant" not in sys.modules:
             for k, v in kwargs.items():
                 setattr(self, k, v)
 
-    ha.helpers.device_registry.DeviceInfo = MockDeviceInfo
-    ha.util.ssl.get_default_context = MagicMock(return_value=MagicMock())
+    import ssl
 
+    ha.helpers.device_registry.DeviceInfo = MockDeviceInfo
+    ha.util.ssl.get_default_context = ssl.create_default_context
     # Register in sys.modules
     sys.modules["homeassistant"] = ha
     sys.modules["homeassistant.config_entries"] = ha.config_entries
