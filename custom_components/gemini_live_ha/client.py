@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import contextlib
 import io
 import json
 import logging
@@ -14,6 +15,7 @@ from typing import Any
 import websockets
 from homeassistant.components import conversation
 from homeassistant.core import Context, HomeAssistant
+from homeassistant.util.ssl import get_default_context
 
 from .const import (
     CHANNELS,
@@ -34,6 +36,7 @@ from .const import (
     DEFAULT_VOICE,
     GEMINI_LIVE_WS_ENDPOINT,
     MODEL_3_8_LIVE,
+    MODEL_3_8_LIVE_EXTENDED_THINKING,
     OUTPUT_SAMPLE_RATE,
     SAMPLE_WIDTH,
     THINKING_LEVEL_OFF,
@@ -135,29 +138,26 @@ class GeminiLiveClient:
         if self.tool_mode == TOOL_MODE_GOOGLE_SEARCH:
             tools.append({"googleSearch": {}})
         elif self.tool_mode == TOOL_MODE_HA_CONTROL:
-            tools.append(
-                {
-                    "functionDeclarations": [
-                        {
-                            "name": "control_home_assistant",
-                            "description": (
-                                "Execute smart home commands or query device states in Home Assistant "
-                                "(e.g., 'turn off living room light', 'what is the temperature')."
-                            ),
-                            "parameters": {
-                                "type": "OBJECT",
-                                "properties": {
-                                    "command": {
-                                        "type": "STRING",
-                                        "description": "Natural language smart home command or query.",
-                                    }
-                                },
-                                "required": ["command"],
-                            },
+            func_decl: dict[str, Any] = {
+                "name": "control_home_assistant",
+                "description": (
+                    "Execute smart home commands or query device states in Home Assistant "
+                    "(e.g., 'turn off living room light', 'what is the temperature')."
+                ),
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "command": {
+                            "type": "STRING",
+                            "description": "Natural language smart home command or query.",
                         }
-                    ]
-                }
-            )
+                    },
+                    "required": ["command"],
+                },
+            }
+            if self.model == MODEL_3_8_LIVE_EXTENDED_THINKING:
+                func_decl["behavior"] = "NON_BLOCKING"
+            tools.append({"functionDeclarations": [func_decl]})
 
         setup: dict[str, Any] = {
             "model": f"models/{self.model}",
@@ -244,54 +244,92 @@ class GeminiLiveClient:
         ws_url = f"{GEMINI_LIVE_WS_ENDPOINT}?key={self.api_key}"
 
         user_text_parts: list[str] = []
+        interim_user_text: str = ""
         model_text_parts: list[str] = []
         audio_chunks: list[bytes] = []
 
-        async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as ws:
-            # Send setup message
+        ssl_context = get_default_context()
+
+        async with websockets.connect(
+            ws_url, ssl=ssl_context, ping_interval=20, ping_timeout=20
+        ) as ws:
+            # 1. Send setup message
             setup_msg = self._build_setup_message()
             await ws.send(json.dumps(setup_msg))
             _LOGGER.debug("Sent Live API setup message for model: %s", self.model)
 
+            # 2. Wait for setupComplete from server before sending any realtimeInput
+            setup_complete = False
+            async for raw_message in ws:
+                try:
+                    data = json.loads(raw_message)
+                except json.JSONDecodeError:
+                    continue
+
+                if "setupComplete" in data:
+                    setup_complete = True
+                    _LOGGER.debug("Gemini Live session setupComplete confirmed")
+                    break
+
+                if "error" in data:
+                    _LOGGER.error("Gemini Live API setup error: %s", data["error"])
+                    return "", "", b""
+
+            if not setup_complete:
+                _LOGGER.error(
+                    "Gemini Live WebSocket closed before setupComplete: code=%s, reason=%s",
+                    ws.close_code,
+                    ws.close_reason,
+                )
+                return "", "", b""
+
+            # 3. Audio streaming task
             async def send_audio() -> None:
                 """Stream input audio chunks to WebSocket."""
                 try:
+                    chunks_sent = 0
+                    total_bytes = 0
                     async for chunk in audio_stream:
                         if not chunk:
                             continue
+                        chunks_sent += 1
+                        total_bytes += len(chunk)
                         encoded = base64.b64encode(chunk).decode("utf-8")
                         msg = {
                             "realtimeInput": {
-                                "mediaChunks": [
-                                    {
-                                        "mimeType": "audio/pcm;rate=16000",
-                                        "data": encoded,
-                                    }
-                                ]
+                                "audio": {
+                                    "mimeType": "audio/pcm;rate=16000",
+                                    "data": encoded,
+                                }
                             }
                         }
                         await ws.send(json.dumps(msg))
 
-                    # Signal end of client turn
-                    end_turn_msg = {
-                        "clientContent": {
-                            "turns": [{"role": "user", "parts": []}],
-                            "turnComplete": True,
-                        }
-                    }
-                    await ws.send(json.dumps(end_turn_msg))
-                    _LOGGER.debug("Finished streaming audio and sent turnComplete")
+                    _LOGGER.debug(
+                        "Streamed %d audio chunks (%d bytes), sending audioStreamEnd",
+                        chunks_sent,
+                        total_bytes,
+                    )
+                    # Indicate end of audio stream to Gemini Live
+                    await ws.send(
+                        json.dumps({"realtimeInput": {"audioStreamEnd": True}})
+                    )
                 except Exception as err:  # noqa: BLE001
-                    _LOGGER.debug("Exception in send_audio: %s", err)
+                    _LOGGER.warning("Exception in send_audio: %s", err)
 
             send_task = asyncio.create_task(send_audio())
 
+            # 4. Receive model responses
             try:
                 async for message in ws:
                     try:
                         data = json.loads(message)
                     except json.JSONDecodeError:
                         continue
+
+                    if "error" in data:
+                        _LOGGER.error("Gemini Live API error: %s", data["error"])
+                        break
 
                     # Tool calls
                     if "toolCall" in data:
@@ -306,6 +344,12 @@ class GeminiLiveClient:
                             text = server_content["inputTranscription"].get("text", "")
                             if text:
                                 user_text_parts.append(text)
+                        elif "interimInputTranscription" in server_content:
+                            text = server_content["interimInputTranscription"].get(
+                                "text", ""
+                            )
+                            if text:
+                                interim_user_text = text
 
                         # Model speech transcription
                         if "outputTranscription" in server_content:
@@ -313,26 +357,46 @@ class GeminiLiveClient:
                             if text:
                                 model_text_parts.append(text)
 
-                        # Model audio output
+                        # Model audio output and potential text parts
                         model_turn = server_content.get("modelTurn")
                         if model_turn and "parts" in model_turn:
                             for part in model_turn["parts"]:
+                                if part.get("text"):
+                                    model_text_parts.append(part["text"])
                                 inline_data = part.get("inlineData")
                                 if inline_data and "data" in inline_data:
                                     raw_pcm = base64.b64decode(inline_data["data"])
                                     audio_chunks.append(raw_pcm)
 
-                        # Check if turn is complete
+                        # Check turn completion
                         if server_content.get("turnComplete"):
                             _LOGGER.debug("Received turnComplete from server")
-                            break
+                            status = server_content.get("interactionStatus")
+                            if status != "IN_PROGRESS":
+                                break
+
+                    # GoAway warning
+                    if "goAway" in data:
+                        _LOGGER.warning(
+                            "Gemini Live server sent goAway: %s", data["goAway"]
+                        )
+                        break
             finally:
                 if not send_task.done():
                     send_task.cancel()
-                    with asyncio.suppress(asyncio.CancelledError):
+                    with contextlib.suppress(asyncio.CancelledError):
                         await send_task
 
+            if ws.close_code is not None and ws.close_code != 1000:
+                _LOGGER.warning(
+                    "Gemini Live WebSocket closed with code %s: %s",
+                    ws.close_code,
+                    ws.close_reason,
+                )
+
         user_text = "".join(user_text_parts).strip()
+        if not user_text and interim_user_text:
+            user_text = interim_user_text.strip()
         model_text = "".join(model_text_parts).strip()
         audio_pcm = b"".join(audio_chunks)
 
@@ -353,12 +417,40 @@ class GeminiLiveClient:
         model_text_parts: list[str] = []
         audio_chunks: list[bytes] = []
 
-        async with websockets.connect(ws_url, ping_interval=20, ping_timeout=20) as ws:
-            # Send setup message
+        ssl_context = get_default_context()
+
+        async with websockets.connect(
+            ws_url, ssl=ssl_context, ping_interval=20, ping_timeout=20
+        ) as ws:
+            # 1. Send setup message
             setup_msg = self._build_setup_message()
             await ws.send(json.dumps(setup_msg))
 
-            # Send client content turn
+            # 2. Wait for setupComplete
+            setup_complete = False
+            async for raw_msg in ws:
+                try:
+                    data = json.loads(raw_msg)
+                except json.JSONDecodeError:
+                    continue
+
+                if "setupComplete" in data:
+                    setup_complete = True
+                    break
+
+                if "error" in data:
+                    _LOGGER.error("Gemini Live API setup error: %s", data["error"])
+                    return "", b""
+
+            if not setup_complete:
+                _LOGGER.error(
+                    "Gemini Live WebSocket closed before setupComplete: code=%s, reason=%s",
+                    ws.close_code,
+                    ws.close_reason,
+                )
+                return "", b""
+
+            # 3. Send client content turn
             client_msg = {
                 "clientContent": {
                     "turns": [
@@ -372,11 +464,16 @@ class GeminiLiveClient:
             }
             await ws.send(json.dumps(client_msg))
 
+            # 4. Receive model response
             async for message in ws:
                 try:
                     data = json.loads(message)
                 except json.JSONDecodeError:
                     continue
+
+                if "error" in data:
+                    _LOGGER.error("Gemini Live API error: %s", data["error"])
+                    break
 
                 if "toolCall" in data:
                     await self._handle_tool_call(ws, data["toolCall"], context)
@@ -392,14 +489,24 @@ class GeminiLiveClient:
                     model_turn = server_content.get("modelTurn")
                     if model_turn and "parts" in model_turn:
                         for part in model_turn["parts"]:
+                            if part.get("text"):
+                                model_text_parts.append(part["text"])
                             inline_data = part.get("inlineData")
                             if inline_data and "data" in inline_data:
                                 raw_pcm = base64.b64decode(inline_data["data"])
                                 audio_chunks.append(raw_pcm)
 
                     if server_content.get("turnComplete"):
-                        break
+                        status = server_content.get("interactionStatus")
+                        if status != "IN_PROGRESS":
+                            break
 
+            if ws.close_code is not None and ws.close_code != 1000:
+                _LOGGER.warning(
+                    "Gemini Live WebSocket closed with code %s: %s",
+                    ws.close_code,
+                    ws.close_reason,
+                )
         model_text = "".join(model_text_parts).strip()
         audio_pcm = b"".join(audio_chunks)
 

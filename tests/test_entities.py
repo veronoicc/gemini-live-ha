@@ -138,7 +138,7 @@ async def test_tts_entity_fallback(mock_entry: ConfigEntry) -> None:
 async def test_tts_supported_voices(mock_entry: ConfigEntry) -> None:
     """Test TTS supported voices."""
     tts_entity = GeminiLiveTTSEntity(mock_entry)
-    voices = await tts_entity.async_get_supported_voices()
+    voices = tts_entity.async_get_supported_voices()
     assert voices is not None
     voice_names = [v.name for v in voices]
     assert "Puck" in voice_names

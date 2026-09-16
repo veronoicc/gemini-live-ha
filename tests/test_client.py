@@ -1,5 +1,8 @@
 """Tests for Gemini Live client."""
 
+import asyncio
+import base64
+import json
 import struct
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -128,3 +131,157 @@ async def test_execute_ha_command() -> None:
         result = await client._execute_ha_command("turn on the lamp")
         assert result == "Turned on the lamp."
         mock_converse.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_process_audio_turn() -> None:
+    """Test streaming audio turn to Gemini Live WebSocket."""
+    hass = MagicMock()
+    config = {CONF_API_KEY: "test_key", CONF_MODEL: DEFAULT_MODEL}
+    client = GeminiLiveClient(hass, config)
+
+    encoded_audio = base64.b64encode(b"output_pcm_audio").decode("utf-8")
+    server_messages = [
+        json.dumps({"setupComplete": {}}),
+        json.dumps(
+            {
+                "serverContent": {
+                    "inputTranscription": {"text": "Schalte das Licht an"},
+                    "outputTranscription": {"text": "Licht eingeschaltet"},
+                    "modelTurn": {"parts": [{"inlineData": {"data": encoded_audio}}]},
+                    "turnComplete": True,
+                }
+            }
+        ),
+    ]
+
+    sent_messages: list[str] = []
+
+    class MockWebSocket:
+        def __init__(self) -> None:
+            self.close_code = 1000
+            self.close_reason = "OK"
+            self.queue: asyncio.Queue[str] = asyncio.Queue()
+            for m in server_messages:
+                self.queue.put_nowait(m)
+
+        async def send(self, msg: str) -> None:
+            sent_messages.append(msg)
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if self.queue.empty():
+                raise StopAsyncIteration
+            await asyncio.sleep(0.001)
+            return await self.queue.get()
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    async def mock_audio_stream():
+        yield b"chunk_1"
+        yield b"chunk_2"
+
+    mock_ws = MockWebSocket()
+    with patch("websockets.connect", return_value=mock_ws) as mock_connect:
+        user_text, model_text, audio = await client.process_audio_turn(
+            mock_audio_stream()
+        )
+        assert user_text == "Schalte das Licht an"
+        assert model_text == "Licht eingeschaltet"
+        assert audio == b"output_pcm_audio"
+
+        # Verify connect called with ssl context
+        mock_connect.assert_called_once()
+        assert "ssl" in mock_connect.call_args.kwargs
+        assert mock_connect.call_args.kwargs["ssl"] is not None
+
+        # Verify setup message sent first
+        assert len(sent_messages) >= 3
+        setup_parsed = json.loads(sent_messages[0])
+        assert "setup" in setup_parsed
+
+        # Verify audio chunks sent
+        assert any(
+            "realtimeInput" in m and "audio" in json.loads(m)["realtimeInput"]
+            for m in sent_messages
+        )
+
+        # Verify audioStreamEnd sent
+        assert any(
+            json.loads(m).get("realtimeInput", {}).get("audioStreamEnd") is True
+            for m in sent_messages
+        )
+
+
+@pytest.mark.asyncio
+async def test_process_text_turn() -> None:
+    """Test sending text turn to Gemini Live WebSocket."""
+    hass = MagicMock()
+    config = {CONF_API_KEY: "test_key", CONF_MODEL: DEFAULT_MODEL}
+    client = GeminiLiveClient(hass, config)
+
+    encoded_audio = base64.b64encode(b"reply_pcm_audio").decode("utf-8")
+    server_messages = [
+        json.dumps({"setupComplete": {}}),
+        json.dumps(
+            {
+                "serverContent": {
+                    "outputTranscription": {"text": "Hallo! Wie kann ich helfen?"},
+                    "modelTurn": {"parts": [{"inlineData": {"data": encoded_audio}}]},
+                    "turnComplete": True,
+                }
+            }
+        ),
+    ]
+
+    sent_messages: list[str] = []
+
+    class MockWebSocket:
+        def __init__(self) -> None:
+            self.close_code = 1000
+            self.close_reason = "OK"
+            self.queue: asyncio.Queue[str] = asyncio.Queue()
+            for m in server_messages:
+                self.queue.put_nowait(m)
+
+        async def send(self, msg: str) -> None:
+            sent_messages.append(msg)
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if self.queue.empty():
+                raise StopAsyncIteration
+            return await self.queue.get()
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    mock_ws = MockWebSocket()
+    with patch("websockets.connect", return_value=mock_ws) as mock_connect:
+        model_text, audio = await client.process_text_turn("Hallo Gemini")
+        assert model_text == "Hallo! Wie kann ich helfen?"
+        assert audio == b"reply_pcm_audio"
+
+        mock_connect.assert_called_once()
+        assert "ssl" in mock_connect.call_args.kwargs
+        assert len(sent_messages) == 2
+        # setup message
+        assert "setup" in json.loads(sent_messages[0])
+        # clientContent
+        client_content = json.loads(sent_messages[1])
+        assert "clientContent" in client_content
+        assert (
+            client_content["clientContent"]["turns"][0]["parts"][0]["text"]
+            == "Hallo Gemini"
+        )

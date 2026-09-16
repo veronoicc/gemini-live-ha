@@ -10,7 +10,7 @@ from homeassistant.components.tts import (
     TtsAudioType,
     Voice,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -81,7 +81,8 @@ class GeminiLiveTTSEntity(TextToSpeechEntity):
             CONF_VOICE: self.entry.data.get(CONF_VOICE, DEFAULT_VOICE),
         }
 
-    async def async_get_supported_voices(
+    @callback
+    def async_get_supported_voices(
         self, language: str | None = None
     ) -> list[Voice] | None:
         """Return list of supported voice presets."""

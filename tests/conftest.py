@@ -216,6 +216,7 @@ if "homeassistant" not in sys.modules:
                 setattr(self, k, v)
 
     ha.helpers.device_registry.DeviceInfo = MockDeviceInfo
+    ha.util.ssl.get_default_context = MagicMock(return_value=MagicMock())
 
     # Register in sys.modules
     sys.modules["homeassistant"] = ha
@@ -231,3 +232,5 @@ if "homeassistant" not in sys.modules:
     sys.modules["homeassistant.helpers.entity_platform"] = ha.helpers.entity_platform
     sys.modules["homeassistant.helpers.intent"] = ha.helpers.intent
     sys.modules["homeassistant.helpers.selector"] = ha.helpers.selector
+    sys.modules["homeassistant.util"] = ha.util
+    sys.modules["homeassistant.util.ssl"] = ha.util.ssl
